@@ -105,6 +105,7 @@ class ARWrapperModel < OAI::Provider::Model
     end
   end
 
+  #modified by ENRIQUE XXX to add draft=false to avoid harvesting drafts
   def get_record_rows(set, options={})
     union = []
     #ignore from and to
@@ -126,16 +127,8 @@ class ARWrapperModel < OAI::Provider::Model
     # upper bound exclusive.
 
 
-    record_sql = @models.map do |m|
-      if m.method_defined? :published
-        if m.column_names.include? "published"
-          res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db)).where(:published => true)
-        else
-          res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db)).select{|p| p if p.published}
-        end
-      else
-        res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db))
-      end
+    record_sql = @models.map do |m|      
+      res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("draft=false and #{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db))
 
       if !(res.empty? or set.nil?)
         res.select!{|record| record.sets.map(&:spec).include?(set)}
